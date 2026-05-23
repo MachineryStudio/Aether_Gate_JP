@@ -24,15 +24,44 @@ import { InstallGuide } from './components/InstallGuide';
 
 const initialDevices: Device[] = [
   { id: '1', name: 'ROUTER-GATEWAY', ip: '192.168.1.1', mac: 'C0:56:27:01:BC:AA', os: 'RouterOS', status: 'Online', latency: 1, uptime: '72d 12h', agentVersion: 'v6.49' },
-  { id: '2', name: 'DESKTOP-PC', ip: '192.168.1.45', mac: 'BC:85:56:D4:FF:67', os: 'Windows', status: 'Online', latency: 4, uptime: '3d 4h', agentVersion: 'v2.4.0' },
+  { id: '2', name: 'DESKTOP-PC', ip: '182.168.1.45', mac: 'BC:85:56:D4:FF:67', os: 'Windows', status: 'Online', latency: 4, uptime: '3d 4h', agentVersion: 'v2.4.0' },
   { id: '3', name: 'WORK-LAPTOP', ip: '192.168.1.67', mac: '00:1C:42:F2:12:3C', os: 'macOS', status: 'Online', latency: 12, uptime: '5h 12m', agentVersion: 'v2.3.8' },
   { id: '4', name: 'NAS-SERVER', ip: '192.168.1.99', mac: 'E0:F8:47:AA:91:2B', os: 'Linux', status: 'Offline', latency: undefined, uptime: undefined, agentVersion: 'v2.1.2' },
-  { id: '5', name: 'GAMING-RIG', ip: '192.168.1.23', mac: 'D4:3D:7E:15:BB:22', os: 'Windows', status: 'Online', latency: 2, uptime: '12h 44m', agentVersion: 'v2.4.1' },
+];
+
+export const lanPresets: Omit<Device, 'id'>[] = [
+  { name: 'GundamLinux', ip: '10.0.0.168', mac: 'F4:8E:38:52:CD:B1', os: 'Linux', status: 'Online', latency: 3, uptime: '14d 8h', agentVersion: 'v2.4.0' },
+  { name: 'XG-1001-T', ip: '10.0.0.213', mac: 'BC:5F:F4:DF:CC:89', os: 'Windows', status: 'Online', latency: 5, uptime: '1d 19h', agentVersion: 'v2.4.0' },
+  { name: 'GundamSeed', ip: '10.0.0.209', mac: 'BC:85:56:D4:FF:67', os: 'Windows', status: 'Online', latency: 2, uptime: '3d 4h', agentVersion: 'v2.4.0' },
+  { name: '12:a7:f0:23:f5:c5', ip: '10.0.0.250', mac: '12:A7:F0:23:F5:C5', os: 'Linux', status: 'Online', latency: 10, uptime: '8h 22m', agentVersion: 'v2.4.0' },
+  { name: 'Andre-s-A15', ip: '10.0.0.135', mac: 'F4:C8:AE:FF:FE:CD', os: 'Mobile', status: 'Online', latency: 15, uptime: '12d 2h', agentVersion: 'v2.4.0' },
+  { name: 'GundamFreedom', ip: '10.0.0.75', mac: '79:FB:23:D9:1A:C7', os: 'Windows', status: 'Online', latency: 4, uptime: '4h 15m', agentVersion: 'v2.4.0' },
+  { name: 'ubuntu', ip: '10.0.0.108', mac: 'DD:0A:C9:D3:F8:FE', os: 'Linux', status: 'Online', latency: 12, uptime: '31d 5h', agentVersion: 'v2.4.1' },
+  { name: 'GUNDAMMAC', ip: '10.0.0.149', mac: '94:1A:0F:6D:74:33', os: 'macOS', status: 'Online', latency: 8, uptime: '6d 1h', agentVersion: 'v2.4.0' },
+  { name: 'Gundam00', ip: '10.0.0.58', mac: 'BC:85:AA:F4:AA:22', os: 'Linux', status: 'Online', latency: 3, uptime: '2d 11h', agentVersion: 'v2.4.0' },
+  { name: 'GundamDock', ip: '10.0.0.14', mac: 'D3:B9:66:5B:C0:BB', os: 'Linux', status: 'Online', latency: 2, uptime: '90d 15h', agentVersion: 'v2.4.0' },
+  { name: 'GundamX', ip: '10.0.0.156', mac: 'E9:D8:4E:DA:A8:A8', os: 'Windows', status: 'Online', latency: 6, uptime: '5d 8h', agentVersion: 'v2.4.0' },
+  { name: 'android-be1a5c1638d575e8', ip: '10.0.0.119', mac: '79:21:10:7B:DC:2B', os: 'Mobile', status: 'Online', latency: 22, uptime: '14h 50m', agentVersion: 'v2.4.0' }
 ];
 
 export default function App() {
   const [currentLang, setCurrentLang] = useState<Language>('ja');
-  const [devices, setDevices] = useState<Device[]>(initialDevices);
+  const [devices, setDevices] = useState<Device[]>(() => {
+    const saved = localStorage.getItem('aethergate_enrolled_devices');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved devices:', e);
+      }
+    }
+    return initialDevices;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('aethergate_enrolled_devices', JSON.stringify(devices));
+  }, [devices]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   
@@ -53,6 +82,15 @@ export default function App() {
   const [hostInfo, setHostInfo] = useState<any>(null);
   const [isHostInfoLoading, setIsHostInfoLoading] = useState(false);
   const [copiedIp, setCopiedIp] = useState<string | null>(null);
+
+  // Real Agent Manual Enrollment Panel States
+  const [showEnrollForm, setShowEnrollForm] = useState(true);
+  const [enrollName, setEnrollName] = useState('');
+  const [enrollIp, setEnrollIp] = useState('');
+  const [enrollMac, setEnrollMac] = useState('');
+  const [enrollOs, setEnrollOs] = useState<'Windows' | 'macOS' | 'Linux' | 'RouterOS' | 'Mobile'>('Windows');
+  const [enrollStatus, setEnrollStatus] = useState<'Online' | 'Offline'>('Online');
+  const [enrollSuccessMessage, setEnrollSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setIsHostInfoLoading(true);
@@ -117,6 +155,59 @@ export default function App() {
       dhcpLeaseCount: discovered.length
     }));
     setIsScanning(false);
+  };
+
+  const handleManualEnroll = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!enrollName || !enrollIp) return;
+
+    const newDevice: Device = {
+      id: Date.now().toString(),
+      name: enrollName.trim(),
+      ip: enrollIp.trim(),
+      mac: enrollMac.trim() || 'FF:FF:FF:FF:FF:FF',
+      os: enrollOs,
+      status: enrollStatus,
+      latency: enrollStatus === 'Online' ? Math.floor(Math.random() * 5) + 3 : undefined,
+      uptime: enrollStatus === 'Online' ? '12m' : undefined,
+      agentVersion: 'v2.4.0'
+    };
+
+    setDevices(prev => {
+      // Avoid duplicate names or IPs
+      const filtered = prev.filter(d => d.name.toLowerCase() !== newDevice.name.toLowerCase() && d.ip !== newDevice.ip);
+      return [...filtered, newDevice];
+    });
+
+    setEnrollSuccessMessage(`Device "${newDevice.name}" registered successfully!`);
+    setTimeout(() => setEnrollSuccessMessage(null), 3000);
+
+    // Clear fields
+    setEnrollName('');
+    setEnrollIp('');
+    setEnrollMac('');
+  };
+
+  const enrollPreset = (preset: Omit<Device, 'id'>) => {
+    const newDevice: Device = {
+      ...preset,
+      id: Date.now().toString() + '_' + Math.random().toString(36).substr(2, 4)
+    };
+
+    setDevices(prev => {
+      const filtered = prev.filter(d => d.name.toLowerCase() !== newDevice.name.toLowerCase() && d.ip !== newDevice.ip);
+      return [...filtered, newDevice];
+    });
+
+    setEnrollSuccessMessage(`Imported preset: ${newDevice.name}`);
+    setTimeout(() => setEnrollSuccessMessage(null), 2500);
+  };
+
+  const clearAllCustomDevices = () => {
+    if (window.confirm('Reset/Clear All registered devices back to defaults?')) {
+      setDevices(initialDevices);
+      localStorage.removeItem('aethergate_enrolled_devices');
+    }
   };
 
   // Filter machines based on search string
@@ -375,6 +466,195 @@ export default function App() {
               />
               <Search className="absolute left-3 top-2.5 w-4 h-4 text-[#0F4C81] pointer-events-none" />
             </div>
+          </div>
+
+          {/* Real PC Agent Enrollment Station Widget */}
+          <div className="bg-white border-4 border-[#0F4C81] p-5 rounded-3xl shadow-sm relative overflow-hidden transition-all">
+            <div className="flex items-center justify-between pb-3 border-b-2 border-dashed border-[#0F4C81]/15">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-[#E6F7F9] text-[#0F4C81] rounded-xl border border-[#0F4C81]/20">
+                  <Laptop className="w-5 h-5 animate-pulse" />
+                </span>
+                <div>
+                  <h3 className="font-sans font-black text-[#0F4C81] text-sm uppercase tracking-wide">
+                    {currentLang === 'ja' ? '📡 リアルPCエージェント登録ステーション' : '📡 REAL AGENT ENROLLMENT STATION'}
+                  </h3>
+                  <p className="text-[10px] text-slate-500 font-sans">
+                    {currentLang === 'ja' 
+                      ? '本物のPC名とIPを登録して、自宅LANのリアル操作を有効化します。' 
+                      : 'Enroll your real servers & client PCs to bridge WebRTC sessions.'}
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => setShowEnrollForm(!showEnrollForm)}
+                className="text-xs font-bold text-[#0F4C81] hover:text-[#009FB7] border border-[#0F4C81]/30 rounded-full px-3 py-1 hover:bg-[#E6F7F9] transition-all"
+              >
+                {showEnrollForm ? (currentLang === 'ja' ? '閉じる' : 'Minimize') : (currentLang === 'ja' ? '設定を開く' : 'Expand')}
+              </button>
+            </div>
+
+            {enrollSuccessMessage && (
+              <div className="mt-3 bg-emerald-550 bg-emerald-50 text-emerald-800 border border-emerald-500/50 rounded-xl px-4 py-2.5 text-xs font-bold animate-bounce">
+                {enrollSuccessMessage}
+              </div>
+            )}
+
+            {showEnrollForm && (
+              <div className="mt-4 space-y-4">
+                {/* Mode A: Import presets */}
+                <div className="p-3.5 bg-[#F4F9FA] rounded-2xl border border-[#0F4C81]/15">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-black uppercase text-[#287A9E] tracking-wider select-none block">
+                      {currentLang === 'ja' ? '🔌 LAN機器自動インポート preset' : 'Quick Import LAN Agent Presets'}
+                    </span>
+                    <button
+                      onClick={() => {
+                        lanPresets.forEach(preset => enrollPreset(preset));
+                        setEnrollSuccessMessage(currentLang === 'ja' ? '🎉 すべてのPCをダッシュボードに一括インポートしました！' : '🎉 All LAN PC Presets registered successfully!');
+                        setTimeout(() => setEnrollSuccessMessage(null), 3000);
+                      }}
+                      className="bg-[#009FB7] hover:bg-[#00899E] text-white text-[10px] font-bold px-3 py-1 rounded-lg transition-all"
+                    >
+                      {currentLang === 'ja' ? '💡 すべての12台を一括登録する' : '💡 Import All 12 PCs Instantly'}
+                    </button>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-1.5 mt-2 max-h-[140px] overflow-y-auto pr-1">
+                    {lanPresets.map((preset, idx) => {
+                      const isEnrolled = devices.some(d => d.ip === preset.ip);
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => enrollPreset(preset)}
+                          disabled={isEnrolled}
+                          className={`text-[10px] font-mono px-2.5 py-1.5 rounded-xl border transition-all text-left flex items-center justify-between ${
+                            isEnrolled 
+                              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-50' 
+                              : 'bg-white text-[#0F4C81] border-[#0F4C81]/30 hover:border-[#0F4C81] hover:bg-[#E6F7F9]'
+                          }`}
+                          title={`Click to enroll ${preset.name} on ${preset.ip}`}
+                        >
+                          <div className="flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <b className="font-sans whitespace-nowrap">{preset.name}</b>
+                            <span className="opacity-80">({preset.ip})</span>
+                          </div>
+                          {!isEnrolled && <span className="ml-1.5 text-[#009FB7] font-sans font-black">+</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Form layout */}
+                <form onSubmit={handleManualEnroll} className="grid grid-cols-1 md:grid-cols-12 gap-3.5 pt-1.5">
+                  <div className="md:col-span-4">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                      {currentLang === 'ja' ? '機器名' : 'Equipment Name'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. GundamLinux"
+                      value={enrollName}
+                      onChange={e => setEnrollName(e.target.value)}
+                      className="w-full text-xs font-mono font-medium px-3 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-[#0F4C81]"
+                    />
+                  </div>
+
+                  <div className="md:col-span-4">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                      {currentLang === 'ja' ? 'LAN IP アドレス' : 'IP Address'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 10.0.0.168"
+                      value={enrollIp}
+                      onChange={e => setEnrollIp(e.target.value)}
+                      className="w-full text-xs font-mono font-medium px-3 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-[#0F4C81]"
+                    />
+                  </div>
+
+                  <div className="md:col-span-4">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                      {currentLang === 'ja' ? 'MACアドレス (任意)' : 'MAC (Optional)'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="auto-generated default"
+                      value={enrollMac}
+                      onChange={e => setEnrollMac(e.target.value)}
+                      className="w-full text-xs font-mono font-medium px-3 py-2 border-2 border-slate-200 rounded-xl outline-none focus:border-[#0F4C81]"
+                    />
+                  </div>
+
+                  <div className="md:col-span-6">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                      {currentLang === 'ja' ? 'オペレーティングシステム' : 'OS Platform'}
+                    </label>
+                    <div className="flex bg-slate-50 rounded-xl p-1 border border-slate-100 gap-1 select-none">
+                      {(['Windows', 'macOS', 'Linux', 'Mobile'] as const).map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setEnrollOs(p)}
+                          className={`flex-1 text-[10px] py-1.5 rounded-lg border text-center font-bold font-sans transition-all ${
+                            enrollOs === p 
+                              ? 'bg-slate-900 border-slate-950 text-white shadow-sm' 
+                              : 'bg-transparent border-transparent text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                      {currentLang === 'ja' ? '動作状態' : 'Host State'}
+                    </label>
+                    <div className="flex bg-slate-50 rounded-xl p-1 border border-slate-100 gap-1 select-none">
+                      {(['Online', 'Offline'] as const).map(s => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setEnrollStatus(s)}
+                          className={`flex-1 text-[10px] py-1.5 rounded-lg border text-center font-bold font-sans transition-all ${
+                            enrollStatus === s 
+                              ? s === 'Online' 
+                                ? 'bg-emerald-550 bg-emerald-600 border-emerald-700 text-white shadow-sm'
+                                : 'bg-rose-600 border-rose-700 text-white shadow-sm'
+                              : 'bg-transparent border-transparent text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-3 flex items-end justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={clearAllCustomDevices}
+                      className="border border-red-200 text-red-600 hover:bg-red-50 text-[10px] font-bold px-3 py-2 rounded-xl transition-all"
+                    >
+                      {currentLang === 'ja' ? 'リスト初期化' : 'Restores'}
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-[#0F4C81] hover:bg-[#1D3B5C] border-2 border-[#09223B] text-white text-[10px] font-black px-4 py-2 rounded-xl transition-all shadow"
+                    >
+                      {currentLang === 'ja' ? '決定' : 'Enrol'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
 
           {/* Grid loop of Equipment Cards */}
